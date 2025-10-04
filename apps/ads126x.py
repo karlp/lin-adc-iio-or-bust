@@ -207,13 +207,14 @@ class ADS126x:
         """
         if type(chans) in [list,tuple]:
             # differential
-            muxp = chans[0].value & 0xf << 4
+            muxp = (chans[0].value & 0xf) << 4
             muxn = chans[1].value & 0xf
         else:
             # single ended
-            muxp = chans.value & 0xf << 4
+            muxp = (chans.value & 0xf) << 4
             muxn = InputMuxChannel.AINCOM
-        self.spid.xfer2([Command.WREG(Registers.INPMUX), 0, muxp | muxn])
+        reg = muxn | muxp
+        self._write1reg(Registers.INPMUX, reg)
 
     def set_digital_filter(self, filter: DigitalFilter):
         regs = self.spid.xfer([Command.RREG(Registers.MODE1), 0, 0])
@@ -242,10 +243,10 @@ class ADS126x:
         self._write1reg(Registers.MODE1, reg)
 
     def set_data_rate(self, val: DataRate):
-        reg = self._read1reg(Registers.MODE0)
+        reg = self._read1reg(Registers.MODE2)
         reg &= ~(DataRate._MASK.value << DataRate._SHIFT.value)
         reg |= val.value << DataRate._SHIFT.value
-        self._write1reg(Registers.MODE0, reg)
+        self._write1reg(Registers.MODE2, reg)
 
     def set_idac(self, idac1:IDACChannel, idac2: IDACChannel):
         reg = idac2.value << 4 | idac1.value
@@ -269,22 +270,46 @@ class ADS126x:
         # todo, keep track of howm anybytes to expect based on our calls so far?
         # 5 is status + 32bit data? reading 10 repeats, that would be sexy...
         bla = self.spid.xfer2([0]*self.rd_size)
-        struct.unpack("<Bi", bytes(blah))
+        struct.unpack("<Bi", bytes(bla))
         return struct.unpack("<Bi", bla)
 
     def read_data_rel(self):
         # This uses the "repeating" mode of direct reads to check that there was no bit corruption
         # It's _probably_ wayyyy overkill really, we low pass everythign anyway, but it's fine to do and demonstrate
         blah = self.spid.xfer2([0]*self.rd_size*2)
-        print("double check?", blah)
+        #print("double check?", blah)
         if self.rd_size == 6:
-            s1, d1, c1, s2, d2, c2 = struct.unpack("<BiBBiB", bytes(blah))
+            s1, d1, c1, s2, d2, c2 = struct.unpack(">BiBBiB", bytes(blah))
         elif self.rd_size == 5:
-            s1, d1, s2, d2 = struct.unpack("<BiBi", bytes(blah))
+            s1, d1, s2, d2 = struct.unpack(">BiBi", bytes(blah))
         if s1 != s2 or d1 != d2:
             print("WARNING! data read had transmission errors")
         # ok. now jsut return it
         return s1, d1
+
+    def _set_tdac(self, tdac, enable: bool, mag=0):
+        reg = mag & 0x1f
+        if enable:
+            reg |= 0x80
+        self._write1reg(tdac, reg)
+
+    def set_tdacp(self, enable: bool, mag=0):
+        """Enable is to enable on the ain6"""
+        self._set_tdac(Registers.TDACP, enable, mag)
+    def set_tdacn(self, enable: bool, mag=0):
+        """Enable is to enable on the ain7"""
+        self._set_tdac(Registers.TDACN, enable, mag)
+
+    def dump_regs_hack(self):
+        for v in Registers:
+            print(f"Register: {v.name} is : {self._read1reg(v):#02x}")
+
+    def dump_regs(self):
+        # this is not really better is it :)
+        blob = [Command.RREG(Registers(0)), 0x19]
+        blob.extend([0]*0x1a)
+        regs = self.spid.xfer(blob)
+        return regs[2:]
 
     @classmethod
     def Probe(cls, spibus, spidevice, max_speed=8000000):
