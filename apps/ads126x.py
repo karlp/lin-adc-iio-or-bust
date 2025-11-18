@@ -31,7 +31,7 @@ class Registers(enum.Enum):
     FSCAL1 = enum.auto()
     FSCAL2 = enum.auto()
     IDACMUX = enum.auto()
-    IDACCFG = enum.auto()
+    IDACMAG = enum.auto()
     REFMUX = enum.auto()
     TDACP = enum.auto()
     TDACN = enum.auto()
@@ -120,6 +120,22 @@ class PGAGain(enum.Enum):
     Gain32 = enum.auto()
     _MASK = 0x7
     _SHIFT = 4
+
+class ConversionDelay(enum.Enum):
+    NoDelay = 0
+    Delay_8u7 =enum.auto()
+    Delay_17u =enum.auto()
+    Delay_35u =enum.auto()
+    Delay_69u =enum.auto()
+    Delay_139u =enum.auto()
+    Delay_278u =enum.auto()
+    Delay_555u =enum.auto()
+    Delay_1m1 =enum.auto()
+    Delay_2m2 =enum.auto()
+    Delay_4m4 =enum.auto()
+    Delay_8m8 =enum.auto()
+    _MASK = 0xf
+    _SHIFT = 0
 
 class DataRate(enum.Enum):
     """
@@ -242,15 +258,25 @@ class ADS126x:
         reg |= filter.value << DigitalFilter._SHIFT.value
         self._write1reg(Registers.MODE1, reg)
 
+    def set_conv_delay(self, val: ConversionDelay):
+        reg = self._read1reg(Registers.MODE0)
+        reg &= ~(ConversionDelay._MASK.value << ConversionDelay._SHIFT.value)
+        reg |= val.value << ConversionDelay._SHIFT.value
+        self._write1reg(Registers.MODE0, reg)
+
     def set_data_rate(self, val: DataRate):
         reg = self._read1reg(Registers.MODE2)
         reg &= ~(DataRate._MASK.value << DataRate._SHIFT.value)
         reg |= val.value << DataRate._SHIFT.value
         self._write1reg(Registers.MODE2, reg)
 
-    def set_idac(self, idac1:IDACChannel, idac2: IDACChannel):
+    def set_idac_mux(self, idac1:IDACChannel, idac2: IDACChannel):
         reg = idac2.value << 4 | idac1.value
         self._write1reg(Registers.IDACMUX, reg)
+
+    def set_idac_mag(self, idac1:IDACMagnitude, idac2: IDACMagnitude):
+        reg = idac2.value << 4 | idac1.value
+        self._write1reg(Registers.IDACMAG, reg)
 
     def set_reference(self, pos: RefPositive, neg: RefNegative):
         reg = pos.value << 3 | neg.value

@@ -104,7 +104,7 @@ def basic1(opts):
         #val = adc.read_data()
         #print(f"lollllalv: {val}")
         status, val = adc.read_data_rel()
-        print(f"tdelta: {delta_t} ({1e9/delta_t:3.05} Hz) jitter: {jitter:+06} ns status: {status:#02x} -> value: {val}")
+        print(f"tdelta: {delta_t} ({1e9/delta_t:#.5g} Hz) jitter: {jitter:+06} ns status: {status:#02x} -> value: {val}")
         if wff:
             wff.writerow({'timestamp_ns': ev.timestamp_ns, 'value': val})
             wf.flush()
