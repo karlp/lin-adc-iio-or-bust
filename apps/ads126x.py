@@ -337,6 +337,11 @@ class ADS126x:
         regs = self.spid.xfer(blob)
         return regs[2:]
 
+    def to_volts(self, raw_value, ref_voltage):
+        pgagain = 32 # keep this from earlier ....?
+        val = raw_value / (pgagain * 2**31) * ref_voltage
+        return val
+
     @classmethod
     def Probe(cls, spibus, spidevice, max_speed=8000000):
     #def Probe(cls, spibus, spidevice, max_speed=2000000):

@@ -171,8 +171,7 @@ class ADS124S0x:
     def __init__(self, spid, chipid):
         self.spid = spid
         self.chipid = chipid
-        # default is status on, crc as checksum
-        self.rd_size = 6
+        self.rd_size = 5 # status. 24bit data, crc
 
     def _read1reg(self, reg: Registers):
         regs = self.spid.xfer([Command.RREG(reg), 0, 0])
@@ -259,6 +258,23 @@ class ADS124S0x:
         reg |= val.value << PGAGain._SHIFT.value | enbits << 3
         self._write1reg(Registers.PGA, reg)
 
+    def set_crc(self, enable: bool):
+        # FIXME - ads1263 has 2 bits here, rethink this..
+        reg = self._read1reg(Registers.SYS)
+        if enable:
+            reg |= (1<<1)
+        else:
+            reg &= ~(1<<1)
+        self._write1reg(Registers.SYS, reg)
+
+    def send_status(self, enable: bool):
+        reg = self._read1reg(Registers.SYS)
+        if enable:
+            reg |= (1<<0)
+        else:
+            reg &= ~(1<<0)
+        self._write1reg(Registers.SYS, reg)
+
     def start(self):
         self.spid.xfer2([Command.START1.value])
 
@@ -275,14 +291,13 @@ class ADS124S0x:
         # It's _probably_ wayyyy overkill really, we low pass everythign anyway, but it's fine to do and demonstrate
         blah = self.spid.xfer2([0]*self.rd_size*2)
         #print("double check?", blah)
-        if self.rd_size == 6:
-            s1, d1, c1, s2, d2, c2 = struct.unpack(">BiBBiB", bytes(blah))
-        elif self.rd_size == 5:
+        if self.rd_size == 5:
             s1, d1, s2, d2 = struct.unpack(">BiBi", bytes(blah))
         if s1 != s2 or d1 != d2:
             print("WARNING! data read had transmission errors")
-        # ok. now jsut return it
-        return s1, d1
+        dat = d1 >> 8
+        # crc = di & 0xff # using the dup read style instead...
+        return s1, dat
 
     def dump_regs_hack(self):
         for v in Registers:
@@ -308,6 +323,12 @@ class ADS124S0x:
         blob.extend([0]*0x11)
         regs = self.spid.xfer(blob)
         return regs[2:]
+
+    def to_volts(self, raw_value, ref_voltage):
+        pgagain = 32 # keep this from earlier ....?
+        vpercnt = (2 * ref_voltage/pgagain)/2**24
+        val = raw_value * vpercnt
+        return val
 
     @classmethod
     def Probe(cls, spibus, spidevice, max_speed=8000000):
