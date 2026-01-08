@@ -44,11 +44,45 @@ It doesn't seem very happy with idac mode, but then again, neither are we :)
 
 
 # in millivolts (measureing flatness here really, not anything else)
-| hw                      | mean mV  | sigma mV  | sigma/mean |
-|-------------------------| -------- |---------- |------------|
-| 1263-pj06 1mV/V/50%     | 2.5049  | 5.5e-5 mV | 2.3e-5 | 
-| 1263-ranger5 0.5mV/V    | 2.4995  | 5.5e-5 mV | 2.3e-5 | ~close enough I can't really say one is any better than the other...
-| 124s08-pj06 2.5mV ChA   | 2.5033  | ~10e-5 mV | ~4e-5  | 
-| 124s08-pj06 2.5mV ChB   | 2.5043  | ~10e-5 mV | ~4e-5  | 
-| 124s08-ranger5 0.5mV/V  | 2.4998  | ~10e-5 mV | ~4e-5  | ~close enough I can't really say one is any better than the other...
-| 124s08-kcellfaker2 ChB  | 4.933  | ~14e-5 mV | ~4e-5  | 
+| hw                      | mean mV  | sigma mV  |
+|-------------------------| -------- |---------- |
+| 1263-pj06 1mV/V/50%     | 2.5049  | 5.5e-5 mV | 
+| 1263-ranger5 0.5mV/V    | 2.4995  | 5.5e-5 mV |  ~close enough I can't really say one is any better than the other...
+| 124s08-pj06 2.5mV ChA   | 2.5033  | ~10e-5 mV | 
+| 124s08-pj06 2.5mV ChB   | 2.5043  | ~10e-5 mV | 
+| 124s08-ranger5 0.5mV/V  | 2.4998  | ~10e-5 mV |  ~close enough I can't really say one is any better than the other...
+| 124s08-kcellfaker2 ChB  | 4.933  | ~14e-5 mV | todo, do that on the ads1263 too, but also, can't compare sigmas frrom diffrent means!
+
+
+# ok, tracking sigma vs adc count...  (this is eyeballed the running mean/sigma of the last 200 samples at  ~30hz)
+Ok, it's looking more ok then...
+
+|     adc          | source     | mean mV  | sigma mV |
+|------------------|------------|----------|----------|
+| ads124s08 chA    | faker2     | 7.257 mV | 12e-5 mV |
+| ads124s08 chA    | faker2     | 6.559 mV | 16e-5 mV |
+| ads124s08 chA    | faker2     | 5.745 mV | 17e-5 mV |
+| ads124s08 chA    | faker2     | 5.046 mV | 17e-5 mV |
+| ads124s08 chA    | faker2     | 3.575 mV | 14e-5 mV |
+| ads124s08 chA    | faker2     | 3.153 mV | 12e-5 mV |
+| ads124s08 chA    | pj06-1-100 | 5.007 mV | 10e-5 mV |
+| ads124s08 chA    | pj06-1-80  | 4.006 mV | 9.5e-5 mV |
+| ads124s08 chA    | pj06-1-50  | 2.504 mV | 11e-5 mV |
+| ads124s08 chA    | pj06-1-20  | 1.001 mV | 10e-5 mV |
+| ads124s08 chA    | rang5-0.5  | 2.498 mV | 10e-5 mV |
+| ads124s08 chA    | rang5-1.0  | 4.997 mV | 10e-5 mV |
+| ads124s08 chA    | rang5-1.5  | 7.496 mV | 10e-5 mV |
+| wv-1263          | rang5-0.5  | 2.500 mV | 6e-5 mV | these are all 6.x, but it does swing a bit.
+| wv-1263          | rang5-1.0  | 4.998 mV | 6e-5 mV |
+| wv-1263          | rang5-1.5  | 7.497 mV | 6e-5 mV |
+| wv-1263          | pj06-1-100 | 5.008 mV | 5e-5 mV |  thse are all ~5.x
+| wv-1263          | pj06-1-80  | 4.006 mV | 5e-5 mV |
+| wv-1263          | pj06-1-50  | 2.504 mV | 5e-5 mV |
+| wv-1263          | pj06-1-20  | 1.003 mV | 5e-5 mV |
+| wv-1263          | faker2     | 7.245 mV | 10e-5 mV |
+| wv-1263          | faker2     | 6.548 mV | 10e-5 mV |
+| wv-1263          | faker2     | 5.793 mV | 11e-5 mV |
+| wv-1263          | faker2     | 4.978 mV | 10e-5 mV |
+| wv-1263          | faker2     | 3.507 mV | 10e-5 mV |
+| wv-1263          | faker2     | 3.145 mV | 10e-5 mV |
+
