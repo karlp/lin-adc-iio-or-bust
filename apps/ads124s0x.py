@@ -171,7 +171,8 @@ class ADS124S0x:
     def __init__(self, spid, chipid):
         self.spid = spid
         self.chipid = chipid
-        self.rd_size = 5 # status. 24bit data, crc
+        self._has_status = False
+        self._has_crc = False
 
     def _read1reg(self, reg: Registers):
         regs = self.spid.xfer([Command.RREG(reg), 0, 0])
@@ -180,6 +181,13 @@ class ADS124S0x:
     def _write1reg(self, reg: Registers, val):
         self.spid.xfer2([Command.WREG(reg), 0, val])
 
+    def get_read_size(self):
+        rds = 3
+        if self._has_crc:
+            rds += 1
+        if self._has_status:
+            rds += 1
+        return rds
 
     def set_channel(self, chans):
         """
@@ -261,6 +269,7 @@ class ADS124S0x:
     def set_crc(self, enable: bool):
         # FIXME - ads1263 has 2 bits here, rethink this..
         reg = self._read1reg(Registers.SYS)
+        self._has_crc = enable
         if enable:
             reg |= (1<<1)
         else:
@@ -269,6 +278,7 @@ class ADS124S0x:
 
     def send_status(self, enable: bool):
         reg = self._read1reg(Registers.SYS)
+        self._has_status = enable
         if enable:
             reg |= (1<<0)
         else:
@@ -282,16 +292,16 @@ class ADS124S0x:
         # sko, a few options here.  read direct? just clock out as much as we expect?
         # todo, keep track of howm anybytes to expect based on our calls so far?
         # 5 is status + 32bit data? reading 10 repeats, that would be sexy...
-        bla = self.spid.xfer2([0]*self.rd_size)
+        bla = self.spid.xfer2([0]*self.get_read_size())
         struct.unpack("<Bi", bytes(bla))
         return struct.unpack("<Bi", bla)
 
     def read_data_rel(self):
         # This uses the "repeating" mode of direct reads to check that there was no bit corruption
         # It's _probably_ wayyyy overkill really, we low pass everythign anyway, but it's fine to do and demonstrate
-        blah = self.spid.xfer2([0]*self.rd_size*2)
+        blah = self.spid.xfer2([0]*self.get_read_size()*2)
         #print("double check?", blah)
-        if self.rd_size == 5:
+        if self.get_read_size() == 5:
             s1, d1, s2, d2 = struct.unpack(">BiBi", bytes(blah))
         if s1 != s2 or d1 != d2:
             print("WARNING! data read had transmission errors")
