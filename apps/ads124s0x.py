@@ -200,7 +200,7 @@ class ADS124S0x:
         else:
             # single ended
             muxp = (chans.value & 0xf) << 4
-            muxn = InputMuxChannel.AINCOM
+            muxn = InputMuxChannel.AINCOM.value
         reg = muxn | muxp
         self._write1reg(Registers.INPMUX, reg)
 
