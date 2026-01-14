@@ -288,6 +288,9 @@ class ADS124S0x:
     def start(self):
         self.spid.xfer2([Command.START1.value])
 
+    def stop(self):
+        self.spid.xfer2([Command.STOP1.value])
+
     def read_data(self):
         # sko, a few options here.  read direct? just clock out as much as we expect?
         # todo, keep track of howm anybytes to expect based on our calls so far?
@@ -315,16 +318,36 @@ class ADS124S0x:
 
     def gpio_directions_all(self, dir):
         reg = self._read1reg(Registers.GPIODAT)
-        reg &= ~(4 << 4)
+        reg &= ~(0xf << 4)
         reg |= dir << 4
         self._write1reg(Registers.GPIODAT, reg)
 
     def gpio_set_all(self, val):
         reg = self._read1reg(Registers.GPIODAT)
-        reg &= ~(4 << 0)
+        reg &= ~(0xf << 0)
         reg |= val
         self._write1reg(Registers.GPIODAT, reg)
 
+    def gpio_as_gpio_all(self, val):
+        reg = self._read1reg(Registers.GPIOCON)
+        reg &= ~(0xf << 0)
+        reg |= val
+        self._write1reg(Registers.GPIOCON, reg)
+
+    def manual_read(self):
+        # FIXME - this doesn't account for crc/status, but neither does the in tree driver anyway
+        regs = self.spid.xfer([Command.RDATA1.value] + [0]*self.get_read_size())
+        print("double check", regs)
+        data_start = 1
+        status = None
+        if self._has_status:
+            status = regs[0]
+            data_start += 1
+        rval = regs[data_start] << 16 + regs[data_start+1] << 8 + regs[data_start + 2]
+        crc = None
+        if self._has_crc:
+            crc = regs[data_start + 3]
+        return status, rval, crc
 
     # FIXME - update for ads124s08?
     def dump_regs(self):
